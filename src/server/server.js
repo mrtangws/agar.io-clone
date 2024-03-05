@@ -14,6 +14,7 @@ const config = require('../../config');
 const util = require('./lib/util');
 const mapUtils = require('./map/map');
 const {getPosition} = require("./lib/entityUtils");
+const { randomInt } = require('crypto');
 
 let map = new mapUtils.Map(config);
 
@@ -63,10 +64,16 @@ const addPlayer = (socket) => {
             socket.emit('kick', 'Invalid username.');
             socket.disconnect();
         } else {
-            console.log('[INFO] Player ' + clientPlayerData.name + ' connected!');
+            console.log('[INFO] Player ' + clientPlayerData.name + ' connected! Socket.id: ' + socket.id);
             sockets[socket.id] = socket;
             currentPlayer.clientProvidedData(clientPlayerData);
             map.players.pushNew(currentPlayer);
+            var aiPlayer = new mapUtils.playerUtils.Player('AIPlayer' + randomInt(100));
+            aiPlayer.name = aiPlayer.id;
+            aiPlayer.init(generateSpawnpoint(), config.defaultPlayerMass);
+            aiPlayer.target.x = randomInt(-5, 5);
+            aiPlayer.target.y = randomInt(-5, 5);
+            map.players.pushNew(aiPlayer);
             io.emit('playerJoin', { name: currentPlayer.name });
             console.log('Total players: ' + map.players.data.length);
         }
@@ -208,12 +215,29 @@ const addSpectator = (socket) => {
 }
 
 const tickPlayer = (currentPlayer) => {
-    if (currentPlayer.lastHeartbeat < new Date().getTime() - config.maxHeartbeatInterval) {
-        sockets[currentPlayer.id].emit('kick', 'Last heartbeat received over ' + config.maxHeartbeatInterval + ' ago.');
-        sockets[currentPlayer.id].disconnect();
+    if(!currentPlayer.id.includes('AIPlayer')) {
+        if (currentPlayer.lastHeartbeat < new Date().getTime() - config.maxHeartbeatInterval) {
+            sockets[currentPlayer.id].emit('kick', 'Last heartbeat received over ' + config.maxHeartbeatInterval + ' ago.');
+            sockets[currentPlayer.id].disconnect();
+        }
+    }
+    else {
+        currentPlayer.target.x += randomInt(-2, 3);
+        currentPlayer.target.y += randomInt(-2, 3);
     }
 
     currentPlayer.move(config.slowBase, config.gameWidth, config.gameHeight, INIT_MASS_LOG);
+    
+    if(currentPlayer.id.includes('AIPlayer')) {
+        if(currentPlayer.x < 10 || currentPlayer.x > config.gameWidth - 10) {
+            currentPlayer.target.x = -currentPlayer.target.x;
+            console.log('[X] currentPlayer.target: ' + currentPlayer.radius + ', ' + currentPlayer.target.x + ', ' + currentPlayer.target.y);
+        }
+        if(currentPlayer.y < 10 || currentPlayer.y > config.gameHeight - 10) {
+            currentPlayer.target.y = -currentPlayer.target.y;
+            console.log('[Y] currentPlayer.target: ' + currentPlayer.radius + ', ' + currentPlayer.target.x + ', ' + currentPlayer.target.y);
+        }
+    }
 
     const isEntityInsideCircle = (point, circle) => {
         return SAT.pointInCircle(new Vector(point.x, point.y), circle);
@@ -262,16 +286,17 @@ const tickPlayer = (currentPlayer) => {
 const tickGame = () => {
     map.players.data.forEach(tickPlayer);
     map.massFood.move(config.gameWidth, config.gameHeight);
-
+    
     map.players.handleCollisions(function (gotEaten, eater) {
         const cellGotEaten = map.players.getCell(gotEaten.playerIndex, gotEaten.cellIndex);
 
         map.players.data[eater.playerIndex].changeCellMass(eater.cellIndex, cellGotEaten.mass);
 
         const playerDied = map.players.removeCell(gotEaten.playerIndex, gotEaten.cellIndex);
-        if (playerDied) {
+        if(playerDied && !map.players.data[gotEaten.playerIndex].id.includes('AIPlayer')) {
             let playerGotEaten = map.players.data[gotEaten.playerIndex];
             io.emit('playerDied', { name: playerGotEaten.name }); //TODO: on client it is `playerEatenName` instead of `name`
+            console.log('playerGotEaten.id: ' + playerGotEaten.id);
             sockets[playerGotEaten.id].emit('RIP');
             map.players.removePlayerByIndex(gotEaten.playerIndex);
         }
@@ -308,9 +333,11 @@ const gameloop = () => {
 const sendUpdates = () => {
     spectators.forEach(updateSpectator);
     map.enumerateWhatPlayersSee(function (playerData, visiblePlayers, visibleFood, visibleMass, visibleViruses) {
-        sockets[playerData.id].emit('serverTellPlayerMove', playerData, visiblePlayers, visibleFood, visibleMass, visibleViruses);
-        if (leaderboardChanged) {
-            sendLeaderboard(sockets[playerData.id]);
+        if(!playerData.id.includes('AIPlayer')) {
+            sockets[playerData.id].emit('serverTellPlayerMove', playerData, visiblePlayers, visibleFood, visibleMass, visibleViruses);
+            if (leaderboardChanged) {
+                sendLeaderboard(sockets[playerData.id]);
+            }
         }
     });
 
