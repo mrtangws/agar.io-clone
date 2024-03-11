@@ -244,6 +244,7 @@ function setupSocket(socket) {
             player.hue = playerData.hue;
             player.massTotal = playerData.massTotal;
             player.cells = playerData.cells;
+            player.hand = playerData.hand;
         }
         users = userData;
         foods = foodsList;
@@ -325,7 +326,15 @@ function gameLoop() {
             let position = getPosition(virus, player, global.screen);
             render.drawVirus(position, virus, graph);
         });
-
+        var str = 'str ';// + player.hand.length;
+        for(var i = 0, len = player.hand.length; i < len; i++) {
+            str += player.hand[i] + ' ';
+        }
+        // player.hand.forEach(tile => {
+        //     render.drawErrorMessage('Tile:' + tile, graph, global.screen);
+        // });
+        // console.log('gameLoop: ');// + player.hand.length);
+        render.drawText('hand: : :' + str, graph, global.screen);
 
         let borders = { // Position of the borders on the screen
             left: global.screen.width / 2 - player.x,

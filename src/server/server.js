@@ -67,6 +67,9 @@ const addPlayer = (socket) => {
             console.log('[INFO] Player ' + clientPlayerData.name + ' connected! Socket.id: ' + socket.id);
             sockets[socket.id] = socket;
             currentPlayer.clientProvidedData(clientPlayerData);
+            for (var i = 0; i < 14 - 1; i++) {
+                currentPlayer.hand.push(randomInt(48));
+            }
             map.players.pushNew(currentPlayer);
             var aiPlayer = new mapUtils.playerUtils.Player('AIPlayer' + randomInt(100));
             aiPlayer.name = aiPlayer.id;
@@ -231,11 +234,11 @@ const tickPlayer = (currentPlayer) => {
     if(currentPlayer.id.includes('AIPlayer')) {
         if(currentPlayer.x < 10 || currentPlayer.x > config.gameWidth - 10) {
             currentPlayer.target.x = -currentPlayer.target.x;
-            console.log('[X] currentPlayer.target: ' + currentPlayer.radius + ', ' + currentPlayer.target.x + ', ' + currentPlayer.target.y);
+            // console.log('[X] currentPlayer.target: ' + currentPlayer.radius + ', ' + currentPlayer.target.x + ', ' + currentPlayer.target.y);
         }
         if(currentPlayer.y < 10 || currentPlayer.y > config.gameHeight - 10) {
             currentPlayer.target.y = -currentPlayer.target.y;
-            console.log('[Y] currentPlayer.target: ' + currentPlayer.radius + ', ' + currentPlayer.target.x + ', ' + currentPlayer.target.y);
+            // console.log('[Y] currentPlayer.target: ' + currentPlayer.radius + ', ' + currentPlayer.target.x + ', ' + currentPlayer.target.y);
         }
     }
 

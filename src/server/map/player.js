@@ -10,6 +10,7 @@ const SPEED_DECREMENT = 0.5;
 const MIN_DISTANCE = 50;
 const PUSHING_AWAY_SPEED = 1.1;
 const MERGE_TIMER = 15;
+const MAX_HAND = 14;
 
 class Cell {
     constructor(x, y, mass, speed) {
@@ -92,6 +93,8 @@ exports.Player = class {
         this.screenHeight = null;
         this.timeToMerge = null;
         this.setLastHeartbeat();
+        this.front = [];
+        this.hand = [];
     }
 
     /* Initalizes things that change with every respawn */

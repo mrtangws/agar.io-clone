@@ -152,6 +152,15 @@ const drawErrorMessage = (message, graph, screen) => {
     graph.fillText(message, screen.width / 2, screen.height / 2);
 }
 
+const drawText = (message, graph, screen) => {
+    // graph.fillStyle = '#333333';
+    // graph.fillRect(0, 0, screen.width, screen.height);
+    graph.textAlign = 'center';
+    graph.fillStyle = '#000000';
+    graph.font = 'bold 30px sans-serif';
+    graph.fillText(message, screen.width / 2, screen.height / 2);
+}
+
 module.exports = {
     drawFood,
     drawVirus,
@@ -159,5 +168,6 @@ module.exports = {
     drawCells,
     drawErrorMessage,
     drawGrid,
-    drawBorder
+    drawBorder,
+    drawText
 };
